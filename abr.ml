@@ -3,7 +3,7 @@ let rec print_list = function
     [] -> ()
   | e::l -> print_int e ; print_string " " ; print_list l
 
-let rec remove_at (n: int) (l: int list): int list = match l with
+let rec remove_at n l = match l with
   | [] -> []
   | h :: t -> if n = 0 then t else h :: remove_at (n-1) t;;
 
@@ -102,3 +102,120 @@ print_string "Test 2.9: ";
 print_list (prefixe (construction [4; 2; 3; 8; 1; 9; 6; 7; 5]));
 print_newline ();;
 (*Expect: 4 2 1 3 8 6 5 7 9*)
+
+(*Question 2.10*)
+type abr_comp = 
+  | VideComp
+  | NoeudComp of {etq: int; fg: abr_comp; fd: abr_comp; }
+  | Pointeur of {etqs: int list; point: abr_comp ref};;
+
+(*print un arbre sous référence en suivant racine - fils gauche - fils droit*)
+let rec print_abr_comp_ref (a: abr_comp ref) = match !a with
+  | VideComp -> print_string "ε "
+  | NoeudComp(n) -> 
+    print_string "( ";
+    print_int n.etq;
+    print_string " ";
+    print_abr_comp_ref (ref n.fg);
+    print_abr_comp_ref (ref n.fd);
+    print_string ") ";
+  | Pointeur(n) -> 
+    print_list n.etqs;
+    print_abr_comp_ref n.point;;
+
+(*print un arbre en suivant racine - fils gauche - fils droit*)
+let rec print_abr_comp (a: abr_comp) = match a with
+  | VideComp -> print_string "ε "
+  | NoeudComp(n) -> 
+    print_string "( ";
+    print_int n.etq;
+    print_string " ";
+    print_abr_comp n.fg;
+    print_abr_comp n.fd;
+    print_string ") ";
+  | Pointeur(n) -> 
+    print_string "[ ";
+    print_list n.etqs;
+    print_string "]";
+    print_string "->";
+    print_abr_comp_ref n.point;;
+
+(*fonction phi pour abr_comp*)
+let rec phi_comp (a: abr_comp) : string = match a with
+  | VideComp -> ""
+  | NoeudComp(n) -> "(" ^ (phi_comp n.fg) ^ ")" ^ (phi_comp n.fd)
+  | Pointeur(n) -> "";;
+
+(*fonction prefixe pour abr_comp*)
+let rec prefixe_comp (a: abr_comp) : int list = match a with
+  | VideComp -> []
+  | NoeudComp(n) -> (n.etq)::(prefixe_comp n.fg)@(prefixe_comp n.fd)
+  | Pointeur(n) -> n.etqs;;
+
+(*égalité des structures de deux arbres comp*)
+let egal_structure (a1: abr_comp) (a2: abr_comp) : bool = match (a1, a2) with
+  |(VideComp,_) -> false
+  |(_,VideComp) -> false
+  |(_,_) -> (phi_comp a1) = (phi_comp a2)
+
+(*identité de deux arbres comp*)
+let identique (a1: abr_comp) (a2: abr_comp) : bool = 
+  (prefixe_comp a1) = (prefixe_comp a2)
+
+(*chercher un arbre comp dans une liste ayant le même structure*)
+let rec find (a: abr_comp) (l: abr_comp ref list) : (abr_comp ref) =
+  match l with
+  | [] -> (ref VideComp)
+  | x::xs -> if (egal_structure a !x)  then x else (find a xs)
+
+(*existence d'un arbre identique dans une liste*)
+let rec exist_identique (a: abr_comp) (l: abr_comp ref list) : bool =
+  match l with
+  | [] -> false
+  | x::xs -> if (identique a !x) then true else (exist_identique a xs)
+
+(*existence d'un arbre ayant le même structure dans une liste*)
+let rec exist (a: abr_comp) (l: abr_comp ref list) =
+  match l with
+  | [] -> false
+  | x::xs -> if (egal_structure a !x) then true else (exist a xs)
+
+(*tous les arbres: 9 en total pour l'exemple en énoncé*)
+let rec arbres (a: abr_comp) : (abr_comp ref list) = match a with
+  | VideComp -> []
+  | NoeudComp(n) -> (ref a)::(arbres n.fd)@(arbres n.fg)
+  | Pointeur(n) -> [];;
+
+(*trouver tous les différents structures: 4 en total pour l'exemple en énoncé*)
+let diff_sous_arbres (a: abr_comp) : (abr_comp ref list) = 
+  let rec aux (l1: abr_comp ref list) (l2: abr_comp ref list) = 
+  match l1 with
+    | [] -> l2
+    | x::xs -> if(exist !x xs) then (aux xs l2)
+      else (aux xs (x::l2))
+  in (aux (arbres a) []);;
+
+(*initilisation sans pointeur pour construction d'un arbre comp à partir d'un arbre orginal*)
+let rec init (a: abr) : abr_comp = match a with
+      | Vide -> VideComp
+      | Noeud(x) -> NoeudComp {etq = x.etq; fg = (init x.fg); fd = (init x.fd)};;
+
+let rec construction_comp (a: abr) : abr_comp = match a with
+  | Vide -> VideComp
+  | Noeud(n) ->
+    let ab = (init a) in
+    let rec replace (a: abr_comp) (l: abr_comp ref list) = 
+      let flag = (exist_identique a l) and e = (find a l) in
+      if flag = true
+      then match a with
+        | VideComp -> VideComp
+        | NoeudComp(x) -> NoeudComp {etq = x.etq; fg = (replace x.fg l); fd = (replace x.fd l)}
+        | Pointeur(x) -> Pointeur {etqs = x.etqs; point = x.point}
+      else match a with
+        | VideComp -> VideComp
+        | _ -> Pointeur {etqs = (prefixe_comp a); point = e}
+    in (replace ab (diff_sous_arbres ab));;
+
+print_string "Test 2.10: L'arbre compressé: ";
+print_abr_comp (construction_comp (construction [4; 2; 3; 8; 1; 9; 6; 7; 5]));;
+print_newline();
