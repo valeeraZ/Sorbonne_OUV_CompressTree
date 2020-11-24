@@ -189,7 +189,7 @@ let rec arbres (a: abr_comp) : (abr_comp ref list) = match a with
 (*trouver tous les différents structures: 4 en total pour l'exemple en énoncé*)
 let diff_sous_arbres (a: abr_comp) : (abr_comp ref list) = 
   let rec aux (l1: abr_comp ref list) (l2: abr_comp ref list) = 
-  match l1 with
+    match l1 with
     | [] -> l2
     | x::xs -> if(exist !x xs) then (aux xs l2)
       else (aux xs (x::l2))
@@ -197,8 +197,8 @@ let diff_sous_arbres (a: abr_comp) : (abr_comp ref list) =
 
 (*initilisation sans pointeur pour construction d'un arbre comp à partir d'un arbre orginal*)
 let rec init (a: abr) : abr_comp = match a with
-      | Vide -> VideComp
-      | Noeud(x) -> NoeudComp {etq = x.etq; fg = (init x.fg); fd = (init x.fd)};;
+  | Vide -> VideComp
+  | Noeud(x) -> NoeudComp {etq = x.etq; fg = (init x.fg); fd = (init x.fd)};;
 
 let rec construction_comp (a: abr) : abr_comp = match a with
   | Vide -> VideComp
@@ -217,5 +217,60 @@ let rec construction_comp (a: abr) : abr_comp = match a with
     in (replace ab (diff_sous_arbres ab));;
 
 print_string "Test 2.10: L'arbre compressé: ";
-print_abr_comp (construction_comp (construction [4; 2; 3; 8; 1; 9; 6; 7; 5]));;
-print_newline();
+print_abr_comp (construction_comp (construction [4; 2; 3; 8; 1; 9; 6; 7; 5]));
+print_newline();;
+
+(*Question 2.11*)
+
+(*fils gauche d'un abr comp*)
+let filsGauche (a: abr_comp ref) : abr_comp ref = match !a with
+  | VideComp -> ref VideComp
+  | NoeudComp(n) -> ref n.fg
+  | Pointeur(n) -> ref VideComp;;
+
+(*fils droit d'un abr comp*)
+let filsDroit (a: abr_comp ref) : abr_comp ref = match !a with
+  | VideComp -> ref VideComp
+  | NoeudComp(n) -> (ref n.fd)
+  | Pointeur(n) -> ref VideComp;;
+
+(*taille d'un abr comp ref -> nombre d'éléments dans prefixe*)
+let taille_comp (a: abr_comp ref) : int = (List.length (prefixe_comp !a));;
+
+(*une liste contenant les éléments entre i eme et k eme (commence de 0)(i et k sont inclus) éléments de la liste originale*)
+let slice list i k =
+  let rec take n = function
+    | [] -> []
+    | h :: t -> if n = 0 then [] else h :: take (n-1) t
+  in
+  let rec drop n = function
+    | [] -> []
+    | h :: t as l -> if n = 0 then l else drop (n-1) t
+  in
+  take (k - i + 1) (drop i list);;
+
+let rec chercher (a: abr_comp) (e: int) : bool = match a with
+  | VideComp -> false
+  | NoeudComp(n) -> 
+    if (e < n.etq)
+    then (chercher n.fg e)
+    else
+    if (e > n.etq) then (chercher n.fd e)
+    else true
+  | Pointeur(n) -> 
+    let rec chercher_tab (a: abr_comp ref) (t: int list) (e: int) : bool = match t with
+      | [] -> false
+      | x::xs -> 
+        if (e = x)
+        then true
+        else let size_g = (taille_comp (filsGauche a)) in
+          if (e < x) 
+          then chercher_tab (filsGauche a) (slice t 1 size_g) e
+          else chercher_tab (filsDroit a)  (slice t (size_g + 1) ((List.length t)-1) ) e
+    in chercher_tab n.point n.etqs e;;
+
+(*Test 2.11*)
+let a = (construction_comp (construction [4; 2; 3; 8; 1; 9; 6; 7; 5])) in
+print_string "Test 2.11: cherche 7 dans l'arbre : ";
+Printf.printf "%B" (chercher a 7);
+print_newline();;
