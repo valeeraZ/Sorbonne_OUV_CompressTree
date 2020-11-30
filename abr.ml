@@ -274,3 +274,33 @@ let a = (construction_comp (construction [4; 2; 3; 8; 1; 9; 6; 7; 5])) in
 print_string "Test 2.11: cherche 7 dans l'arbre : ";
 Printf.printf "%B" (chercher a 7);
 print_newline();;
+
+let time f x : float=
+    let t = Sys.time() in
+    let fx = f x in
+    (*Printf.printf "Execution time: %fs\n" (Sys.time() -. t);*)
+    fx;
+    (Sys.time() -. t);;
+
+let sizeof (x: 'a):int = Obj.reachable_words(Obj.repr x);;
+
+let list1 =  [4; 2; 3; 8; 1; 9; 6; 7; 5] in
+let cons_abr_c =  (construction [4; 2; 3; 8; 1; 9; 6; 7; 5]) in
+print_newline();
+print_string "Time test of construction abr: ";
+Printf.printf "Execution time: %fs\n" (time construction list1);
+(*print_float(time construction list1);*)
+
+
+print_string "Time test of construction abr_comp: ";
+Printf.printf "Execution time: %fs\n" (time construction_comp cons_abr_c);
+(*print_float(time construction_comp cons_abr_c);*)
+
+
+print_string "Espace test of construction abr: ";
+print_int (sizeof cons_abr_c);
+print_newline();
+
+print_string "Espace test of construction abr_comp: ";
+print_int (sizeof (construction_comp cons_abr_c));
+print_newline();;
