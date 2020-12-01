@@ -1,15 +1,34 @@
 # Projet Ouverture
 
+Fichier `abr.ml`: Toutes les fonctions nécessaires pour `abr` et `abr_comp`  
+Fichier `test_fonction.ml`: Tests des fonctions dans `abr.ml`  
+Fichier `experimentation.ml`: Étude expérimentale de complexité en écrivant des données des expérimentations dans les fichiers du directoire /data. Elle peut durer plusieurs minutes.
+
 # Tests
 
 ```
 Test 1.1: Liste L: 1 2 3 4  Liste P:5 
+
 Test 1.2: Liste P: 2 3 5 4 1 
+
 Test 1.7: ( 4 ( 2 ( 1 ε ε ) ( 3 ε ε ) ) ( 8 ( 6 ( 5 ε ε ) ( 7 ε ε ) ) ( 9 ε ε ) ) ) 
+
 Test 2.8: ((())())((())())()
+
 Test 2.9: 4 2 1 3 8 6 5 7 9 
+
 Test 2.10: L'arbre compressé: ( 4 ( 2 ( 1 ε ε ) [ 3 ]->( 1 ε ε ) ) ( 8 [ 6 5 7 ]->( 2 ( 1 ε ε ) ( 3 ε ε ) ) [ 9 ]->( 1 ε ε ) ) ) 
-Test 2.11: cherche 7 dans l'arbre compressé : true
+
+Test 2.11: cherche 7 dans l'arbre : true
+
+Test 3.13: complexité en temps et en mémoire avec n = 100
+Temps pour construction abr: 4.5e-05
+Temps pour construction abr_comp: 0.012287
+Espace de structure abr: 400
+Espace de strucuture abr_comp: 369
+Temps pour chercher abr: 2e-06
+Temps pour chercher abr_comp: 2e-06
+
 ```
 # Image
 

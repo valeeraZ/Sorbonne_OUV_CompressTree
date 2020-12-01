@@ -1,2 +1,8 @@
 /.vscode/
 /node_modules/
+.DS_Store
+*.cmi
+*.cmo
+abr
+experimentation
+test_fonction
