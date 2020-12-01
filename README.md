@@ -2,7 +2,7 @@
 
 Fichier `abr.ml`: Toutes les fonctions nécessaires pour `abr` et `abr_comp`  
 Fichier `test_fonction.ml`: Tests des fonctions dans `abr.ml`  
-Fichier `experimentation.ml`: Étude expérimentale de complexité en écrivant des données des expérimentations dans les fichiers du directoire /data. Elle peut durer plusieurs minutes.
+Fichier `experimentation.ml`: Étude expérimentale de complexité en écrivant des données des expérimentations dans les fichiers du répertoire */data*. Elle peut durer plusieurs minutes.
 
 # Tests
 
