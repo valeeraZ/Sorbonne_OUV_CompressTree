@@ -4,6 +4,14 @@ Fichier `abr.ml`: Toutes les fonctions nécessaires pour `abr` et `abr_comp`
 Fichier `test_fonction.ml`: Tests des fonctions dans `abr.ml`  
 Fichier `experimentation.ml`: Étude expérimentale de complexité en écrivant des données des expérimentations dans les fichiers du répertoire */data*. Elle peut durer plusieurs minutes.
 
+Pour compiler, vous avez besoin:
+```
+ocamlc abr.ml -o abr
+ocamlc abr.cmo test_fonction.ml -o test_fonction
+ocamlc abr.cmo experimentation.ml -o experimentation
+```
+puis vous pouvez exécuter `./test_fonction` ou `./experimentation`.
+
 # Tests
 
 ```

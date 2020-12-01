@@ -146,7 +146,7 @@ type abr_comp =
 
 Le record `Pointeur` représente un sous-arbre par un pointeur qui stocke les étiquettes contenues dans ce sous-arbre dans le tableau `etqs`.  L'attribut `point` représente une référence vers un sous-arbre ayant le même structure.
 
-Pour ce nouveau type, nous devons réécrire les méthodes `phi` et  `prefixe`(voir dans le fichier abr.ml ligne 143 -153). La construction d'un ABR compressé commence par initialiser un ABR compressé sans `Pointeur` à partir d'un ABR non compressé.
+Pour ce nouveau type, nous devons réécrire les méthodes `phi` et  `prefixe`(voir dans le fichier abr.ml). La construction d'un ABR compressé commence par initialiser un ABR compressé sans `Pointeur` à partir d'un ABR non compressé.
 
 ```ocaml
 let rec init (a: abr) : abr_comp = match a with
@@ -240,7 +240,7 @@ let filsDroit (a: abr_comp ref) : abr_comp ref = match !a with
   | Pointeur(n) -> ref VideComp;;
 ```
 
- Pour manipuler le tableau d'étiquettes dans `Pointeur`(voir la question 2.10), nous avons une fonction `slice` (voir le fichier abr.ml ligne 248-258) qui peut extraire une partie contenant les éléments entre i-ème et k-ème (i et k sont inclus) dans ce tableau. 
+ Pour manipuler le tableau d'étiquettes dans `Pointeur`(voir la question 2.10), nous avons une fonction `slice` (voir le fichier abr.ml) qui peut extraire une partie contenant les éléments entre i-ème et k-ème (i et k sont inclus) dans ce tableau. 
 
 Si on tombe dans la cherche d'un élément `e` dans un tableau d'étiquettes, sachant que le premier élément `x` présente la racine de l'ABR. En  comparant `e` et `x`, on peut savoir l'élément `e` est dans le fils droit ou gauche puis nous utilisons la fonction `slice` pour nous aider à sauter dans **la partie correspondante** puis le chercher récursivement.
 
