@@ -68,6 +68,8 @@ Un arbre binaire est :
 - soit réduit à une feuille
 - soit décomposable en une racine qui est un nœud interne et qui pointe vers deux enfants ordonnés, l’enfant gauche et l’enfant droit.
 
+### Question 1.7
+
 En prenant ces deux cas, nous avons défini un type `abr` pour présenter un arbre binaire.
 
 ```ocaml
@@ -291,7 +293,7 @@ Donc dans la fonction `size_abr_comp`, on peut en déduire qu'un nœud dans un A
 
 L'axe des ordonnées est la somme de temps pour chercher tous les nœuds dans un ABR. S'il y a `n` entiers dans un ABR `a`, alors la valeur est `(time_chercher chercher a 1) +(time_chercher chercher a 2) + ... + (time_chercher chercher a n)`.
 
-La fonction *chercher*  dans un ABR compressé doit manipuler le tableau donc nous observons que *ABR compressé* prends moins du temps sur le même nombre de nœuds que *ABR* mais les deux fonctions *chercher* dans ABR et dans ABR compressé ont la même complexité. 
+La fonction *chercher*  dans un *ABR compressé* doit manipuler le tableau donc nous observons que *ABR compressé* prends plus de temps sur le même nombre de nœuds que *ABR* mais les deux fonctions *chercher* dans *ABR* et dans *ABR compressé* ont la même complexité. 
 
 ### Question 3.15
 
