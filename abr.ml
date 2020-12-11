@@ -3,6 +3,13 @@ let rec print_list = function
     [] -> ()
   | e::l -> print_int e ; print_string " " ; print_list l
 
+let print_array (a: int array) = 
+  let l = (Array.length a) in
+    for i = 0 to l-1 do
+      print_int a.(i);
+      print_string " ";
+    done;;
+
 let rec remove_at n l = match l with
   | [] -> []
   | h :: t -> if n = 0 then t else h :: remove_at (n-1) t;;
@@ -75,21 +82,7 @@ let rec prefixe (a: abr) : int list = match a with
 type abr_comp = 
   | VideComp
   | NoeudComp of {etq: int; fg: abr_comp; fd: abr_comp; }
-  | Pointeur of {etqs: int list; point: abr_comp ref};;
-
-(*print un arbre sous référence en suivant racine - fils gauche - fils droit*)
-let rec print_abr_comp_ref (a: abr_comp ref) = match !a with
-  | VideComp -> print_string "ε "
-  | NoeudComp(n) -> 
-    print_string "( ";
-    print_int n.etq;
-    print_string " ";
-    print_abr_comp_ref (ref n.fg);
-    print_abr_comp_ref (ref n.fd);
-    print_string ") ";
-  | Pointeur(n) -> 
-    print_list n.etqs;
-    print_abr_comp_ref n.point;;
+  | Pointeur of {etqs: int array; mutable point: abr_comp};;
 
 (*print un arbre en suivant racine - fils gauche - fils droit*)
 let rec print_abr_comp (a: abr_comp) = match a with
@@ -103,10 +96,10 @@ let rec print_abr_comp (a: abr_comp) = match a with
     print_string ") ";
   | Pointeur(n) -> 
     print_string "[ ";
-    print_list n.etqs;
+    print_array n.etqs;
     print_string "]";
     print_string "->";
-    print_abr_comp_ref n.point;;
+    print_abr_comp n.point;;
 
 (*fonction phi pour abr_comp*)
 let rec phi_comp (a: abr_comp) : string = match a with
@@ -115,9 +108,9 @@ let rec phi_comp (a: abr_comp) : string = match a with
   | Pointeur(n) -> "";;
 
 (*fonction prefixe pour abr_comp*)
-let rec prefixe_comp (a: abr_comp) : int list = match a with
-  | VideComp -> []
-  | NoeudComp(n) -> (n.etq)::(prefixe_comp n.fg)@(prefixe_comp n.fd)
+let rec prefixe_comp (a: abr_comp) : int array = match a with
+  | VideComp -> [||]
+  | NoeudComp(n) -> (Array.concat [ [|n.etq|] ; (prefixe_comp n.fg) ; (prefixe_comp n.fd)])
   | Pointeur(n) -> n.etqs;;
 
 (*égalité des structures de deux arbres comp*)
@@ -131,15 +124,15 @@ let identique (a1: abr_comp) (a2: abr_comp) : bool =
   (prefixe_comp a1) = (prefixe_comp a2)
 
 (*chercher un arbre comp dans une liste ayant le même structure*)
-let rec find (a: abr_comp) (l: abr_comp ref list) : (abr_comp ref) =
+let rec find (a: abr_comp) (l: abr_comp list) : abr_comp =
   match l with
-  | [] -> (ref VideComp)
-  | x::xs -> if (egal_structure a !x)  then x else (find a xs)
+  | [] -> VideComp
+  | x::xs -> if (egal_structure a x)  then x else (find a xs)
 
 (*tous les arbres: 9 en total pour l'exemple en énoncé*)
-let rec arbres (a: abr_comp) : (abr_comp ref list) = match a with
+let rec arbres (a: abr_comp) : (abr_comp list) = match a with
   | VideComp -> []
-  | NoeudComp(n) -> (arbres n.fg)@(arbres n.fd)@[(ref a)]
+  | NoeudComp(n) -> (arbres n.fg)@(arbres n.fd)@[a]
   | Pointeur(n) -> [];;
 
 (*initilisation sans pointeur pour construction d'un arbre comp à partir d'un arbre orginal*)
@@ -153,71 +146,59 @@ let rec construction_comp (a: abr) : abr_comp = match a with
     let ab = (init a) in
     let l = (arbres ab) in
     let rec replace (a: abr_comp) = 
+    let e = (find a l) in 
       let e = (find a l) in 
-      let flag_found = (VideComp != !e) in
-      if flag_found = true then 
-        if (identique a !e) = true
-        then match a with
-          | VideComp -> VideComp
-          | NoeudComp(x) -> NoeudComp {etq = x.etq; fg = (replace x.fg ); fd = (replace x.fd )}
-          | Pointeur(x) -> Pointeur {etqs = x.etqs; point = x.point}
-        else match a with
-          | VideComp -> VideComp
-          | _ -> Pointeur {etqs = (prefixe_comp a); point = e}
-      else
-        match a with
+    let e = (find a l) in 
+      if (identique a e) = true
+      then match a with
         | VideComp -> VideComp
         | NoeudComp(x) -> NoeudComp {etq = x.etq; fg = (replace x.fg ); fd = (replace x.fd )}
         | Pointeur(x) -> Pointeur {etqs = x.etqs; point = x.point}
+      else match a with
+        | VideComp -> VideComp
+        | _ -> Pointeur {etqs = (prefixe_comp a); point = e}
     in (replace ab );;
 
 (*Question 2.11*)
 (*fils gauche d'un abr comp*)
-let filsGauche (a: abr_comp ref) : abr_comp ref = match !a with
-  | VideComp -> ref VideComp
-  | NoeudComp(n) -> ref n.fg
-  | Pointeur(n) -> ref VideComp;;
+let filsGauche (a: abr_comp) : abr_comp = match a with
+  | NoeudComp(n) -> n.fg
+  | _ -> VideComp;;
 
 (*fils droit d'un abr comp*)
-let filsDroit (a: abr_comp ref) : abr_comp ref = match !a with
-  | VideComp -> ref VideComp
-  | NoeudComp(n) -> (ref n.fd)
-  | Pointeur(n) -> ref VideComp;;
+let filsDroit (a: abr_comp) : abr_comp = match a with
+  | NoeudComp(n) -> n.fd
+  | _ -> VideComp;;
 
 (*taille d'un abr comp ref -> nombre d'éléments dans prefixe*)
-let taille_comp (a: abr_comp ref) : int = (List.length (prefixe_comp !a));;
-
-(*une liste contenant les éléments entre i eme et k eme (commence de 0)(i et k sont inclus) éléments de la liste originale*)
-let slice list i k =
-  let rec take n = function
-    | [] -> []
-    | h :: t -> if n = 0 then [] else h :: take (n-1) t
-  in
-  let rec drop n = function
-    | [] -> []
-    | h :: t as l -> if n = 0 then l else drop (n-1) t
-  in
-  take (k - i + 1) (drop i list);;
+let taille_comp (a: abr_comp) : int = (Array.length (prefixe_comp a));;
 
 let rec chercher_comp (a: abr_comp) (e: int) : bool = match a with
   | VideComp -> false
   | NoeudComp(n) -> 
     if (e < n.etq)
     then (chercher_comp n.fg e)
-    else
-    if (e > n.etq) then (chercher_comp n.fd e)
+    else if (e > n.etq) 
+    then (chercher_comp n.fd e)
     else true
   | Pointeur(n) -> 
-    let rec chercher_tab (a: abr_comp ref) (t: int list) (e: int) : bool = match t with
-      | [] -> false
-      | x::xs -> 
-        if (e = x)
-        then true
-        else let size_g = (taille_comp (filsGauche a)) in
-          if (e < x) 
-          then chercher_tab (filsGauche a) (slice t 1 size_g) e
-          else chercher_tab (filsDroit a)  (slice t (size_g + 1) ((List.length t)-1) ) e
-    in chercher_tab n.point n.etqs e;;
+    let i = (ref 0) and a = (ref n.point) and result = (ref false) in
+    begin
+      while !i < (Array.length n.etqs) && (!result = false) do
+        if (e < n.etqs.(!i)) then
+          begin
+            i := !i + 1; 
+            a := (filsGauche !a);
+          end
+        else if (e > n.etqs.(!i)) then
+          begin
+            i := !i + 1 + (taille_comp (filsGauche !a));
+            a := (filsDroit !a);
+          end
+        else result := true
+      done;
+      !result;
+    end;;    
 
 let rec chercher (a: abr) (e: int) : bool = match a with
   | Vide -> false
@@ -245,10 +226,3 @@ let time_chercher f x y: float =
 
 let sizeof (x: 'a) : int = 
   Obj.reachable_words(Obj.repr x);;
-
-let size_abr (a: abr) : int = sizeof a;;
-
-let rec size_abr_comp (a: abr_comp) : int = match a with
-  | VideComp -> sizeof VideComp
-  | NoeudComp(n) -> 4 + (size_abr_comp n.fg) + (size_abr_comp n.fd)
-  | Pointeur(n) -> (sizeof n.etqs) + 1 ;;

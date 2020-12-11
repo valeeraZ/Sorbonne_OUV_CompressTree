@@ -40,6 +40,13 @@ Temps pour chercher abr_comp: 2e-06
 ```
 # Image
 
+Nous utilisons gnuplot pour la représentation graphique de données.
+
+```
+cd data
+gnuplot
+```
+
 Pour espace.png
 ```
 set terminal png
@@ -47,18 +54,27 @@ set output 'espace.png'
 set grid
 set xlabel "nombre de noeuds"
 set ylabel "mots stockés en mémoire"
-set title "expérimentale de complexité en espace"
+set title "expérimentation de complexité en espace"
 plot "abr_espace" using 1:2 title "ABR" with linespoints,"abrcomp_espace" using 1:2 title "ABR compressé" with linespoints
-
 ```
+
+Pour espace_petit.png
+```
+set terminal png
+set output 'espace_petit.png'
+set xlabel "nombre de noeuds"
+set ylabel "mots stockés en mémoire"
+set title "expérimentation de complexité en espace (50-500 noeuds)"
+plot "abr_espace_petit" using 1:2 title "ABR" with linespoints, "abrcomp_espace_petit" using 1:2 title "ABR compressé" with linespoints
+```
+
 Pour temps.png
 ```
 set terminal png
 set output 'temps.png'
 set grid
-set title "expérimentale de complexité en temps"
+set title "expérimentation de complexité en temps"
 set xlabel "nombre de noeuds "
 set ylabel "sommes de temps pour chercher tous les noeuds"
 plot "chercher_abr" using 1:2 title "ABR" with linespoints,"chercher_abrcomp" using 1:2 title "ABR compressé" with linespoints
-
 ```

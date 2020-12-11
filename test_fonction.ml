@@ -52,7 +52,7 @@ print_newline();
 print_newline();;
 
 (*Test 3.13*)
-let n = 100 in
+let n = 500 in
 print_string "Test 3.13: complexité en temps et en mémoire avec n = "; print_int n; 
 print_newline();
 
@@ -72,11 +72,11 @@ print_newline();
 let abr =  (construction list) in
 let abr_c = (construction_comp abr) in
 print_string "Espace de structure abr: ";
-print_int (size_abr abr);
+print_int (sizeof abr);
 print_newline();
 
 print_string "Espace de strucuture abr_comp: ";
-print_int (size_abr_comp abr_c);
+print_int (sizeof abr_c);
 print_newline();
 
 print_string "Temps pour chercher abr: ";

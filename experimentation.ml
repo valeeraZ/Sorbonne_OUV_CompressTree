@@ -28,7 +28,7 @@ let rec test_noeud (l: int list) =
     let list = (gen_permutation n) in
     let abr =  (construction list) in
     let abrc = (construction_comp abr) in
-    let e_abr = (size_abr abr) and e_abr_comp = (size_abr_comp abrc) in
+    let e_abr = (sizeof abr) and e_abr_comp = (sizeof abrc) in
     let t_chercher = (somme_temps_chercher_abr abr list) and t_chercher_comp = (somme_temps_chercher_abr_comp abrc list) in
     begin
       Printf.fprintf c1 "%d %d\n" n e_abr;
@@ -47,3 +47,31 @@ let rec test_noeud (l: int list) =
     end;;
 
 test_noeud list_n;;
+
+let file_abr_espace_petit = "data/abr_espace_petit";;
+let file_abrcomp_espace_petit = "data/abrcomp_espace_petit";;
+let list_n_petit = [50;100;150;200;250;300;350;400;450;500;];;
+
+let c1_petit = (open_out file_abr_espace_petit);;
+let c2_petit = (open_out file_abrcomp_espace_petit);;
+
+let rec test_noeud_nb_petit (l: int list) = 
+  match l with
+  | n::ns -> 
+    let list = (gen_permutation n) in
+    let abr =  (construction list) in
+    let abrc = (construction_comp abr) in
+    let e_abr = (sizeof abr) and e_abr_comp = (sizeof abrc) in
+    begin
+      Printf.fprintf c1_petit "%d %d\n" n e_abr;
+      Printf.fprintf c2_petit "%d %d\n" n e_abr_comp;
+      test_noeud_nb_petit ns;
+    end
+  | _ -> 
+    begin
+      close_out c1_petit;
+      close_out c2_petit;
+      ();
+    end;;
+
+test_noeud_nb_petit list_n_petit;;
