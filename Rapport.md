@@ -141,12 +141,12 @@ Pour compresser un ABR, il est nécessaire de définir une nouvelle structure de
 type abr_comp = 
   | VideComp
   | NoeudComp of {etq: int; fg: abr_comp; fd: abr_comp; }
-  | Pointeur of {etqs: int list; point: abr_comp ref};;
+  | Pointeur of {etqs: int array; mutable point: abr_comp};;
 ```
 
-Le record `Pointeur` représente un sous-arbre par un pointeur qui stocke les étiquettes contenues dans ce sous-arbre dans le tableau `etqs`.  L'attribut `point` représente une référence vers un sous-arbre ayant le même structure.
+Le record `Pointeur` représente un sous-arbre par un pointeur qui stocke les étiquettes contenues dans ce sous-arbre dans le tableau `etqs`.  L'attribut `point` représente un pointer implicite vers un sous-arbre ayant le même structure.
 
-Pour ce nouveau type, nous devons réécrire les méthodes `phi` et  `prefixe`(voir dans le fichier abr.ml). La construction d'un ABR compressé commence par initialiser un ABR compressé sans `Pointeur` à partir d'un ABR non compressé.
+Pour ce nouveau type, nous devons réécrire les méthodes `phi` et  `prefixe`(voir dans le fichier abr.ml). La construction d'un ABR compressé commence par initialiser un ABR compressé sans `Pointeur` par copie d'un ABR non compressé.
 
 ```ocaml
 let rec init (a: abr) : abr_comp = match a with
@@ -176,10 +176,10 @@ let rec arbres (a: abr_comp) : (abr_comp ref list) = match a with
 Pour remplacer un nœud par un `Pointeur`, nous devons trouver un ABR compressé qui a une même structure comme ce nœud dans la liste renvoyée par la fonction `arbres`.
 
 ```ocaml
-let rec find (a: abr_comp) (l: abr_comp ref list) : (abr_comp ref) =
+let rec find (a: abr_comp) (l: abr_comp list) : abr_comp =
   match l with
-  | [] -> (ref VideComp)
-  | x::xs -> if (egal_structure a !x)  then x else (find a xs)
+  | [] -> VideComp
+  | x::xs -> if (egal_structure a x)  then x else (find a xs)
 ```
 
 La fonction `egal_structure` permet de savoir l'égalité de structures de deux ABR compressés.
@@ -193,30 +193,23 @@ let rec construction_comp (a: abr) : abr_comp = match a with
     let ab = (init a) in
     let l = (arbres ab) in
     let rec replace (a: abr_comp) = 
-      let e = (find a l) in 
-      let flag_found = (VideComp != !e) in
-      if flag_found = true then 
-        if (identique a !e) = true
-        then match a with
-          | VideComp -> VideComp
-          | NoeudComp(x) -> NoeudComp {etq = x.etq; fg = (replace x.fg ); fd = (replace x.fd )}
-          | Pointeur(x) -> Pointeur {etqs = x.etqs; point = x.point}
-        else match a with
-          | VideComp -> VideComp
-          | _ -> Pointeur {etqs = (prefixe_comp a); point = e}
-      else
-        match a with
+    let e = (find a l) in 
+      if (identique a e) = true
+      then match a with
         | VideComp -> VideComp
         | NoeudComp(x) -> NoeudComp {etq = x.etq; fg = (replace x.fg ); fd = (replace x.fd )}
         | Pointeur(x) -> Pointeur {etqs = x.etqs; point = x.point}
+      else match a with
+        | VideComp -> VideComp
+        | _ -> Pointeur {etqs = (prefixe_comp a); point = e}
     in (replace ab );;
 ```
 
-On vérifie que le ABR compressé parcouru `a` est identique avec un autre ABR compressé `e` trouvé par `find` dans la liste `l` renvoyée par `arbres` (les résultats de préfixe sont identiques). S'ils ne sont pas identiques, alors `a` peut être remplacé par une référence vers `e`.
+On vérifie que l'ABR compressé  `a` est identique avec un autre ABR compressé `e` trouvé par `find` dans la liste `l` renvoyée par `arbres` (si les résultats de préfixe sont identiques). S'ils ne sont pas identiques, alors `a` peut être remplacé par un pointer vers `e`. Sinon, on laisse ce nœud inchangé et continue à remplacer ses sous arbres récursivement.
 
 ![figure 2](https://i.loli.net/2020/12/01/DG1OdKYkynep7uv.png)
 
-Une version imprimée du figure au dessus est la suivante: 
+Une version imprimée du figure au dessus est: 
 
 ```
 ( 4 ( 2 ( 1 ε ε ) [ 3 ]->( 1 ε ε ) ) ( 8 [ 6 5 7 ]->( 2 ( 1 ε ε ) ( 3 ε ε ) ) [ 9 ]->( 1 ε ε ) ) ) 
@@ -224,34 +217,47 @@ Une version imprimée du figure au dessus est la suivante:
 
 ### Question 2.11
 
-Pour implémenter une fonction de recherche de valeur dans un ABR compressé, il faut avoir l'accès à fils gauche/droit d'un ABR compressé qui peut être sous forme `Pointeur`
+Soit l'arbre en cours de visiter `a`. Si on tombe dans la cherche d'un élément `e` dans un tableau d'étiquettes, sachant que le premier élément `x` présente la racine de `a`. En  comparant `e` et `x`, on peut savoir l'élément `e` est dans le fils droit ou gauche de `a` puis nous utilisons une indice `i`  du tableau `etqs` pour nous aider à sauter dans **la partie correspondante**  pour visiter le tableau d'étiquettes plus efficacement.
+
+L'indice `i` est initialisée à 0, elle dépend la position de l'élément x: 
+
+- Si dans le fils droit, `i = i + 1`
+- Si dans le fils gauche, `i = i + 1 + taille(filsGauche a)`
 
 ```ocaml
-(*fils gauche d'un abr comp*)
-let filsGauche (a: abr_comp ref) : abr_comp ref = match !a with
-  | VideComp -> ref VideComp
-  | NoeudComp(n) -> ref n.fg
-  | Pointeur(n) -> ref VideComp;;
-
-(*fils droit d'un abr comp*)
-let filsDroit (a: abr_comp ref) : abr_comp ref = match !a with
-  | VideComp -> ref VideComp
-  | NoeudComp(n) -> ref n.fd
-  | Pointeur(n) -> ref VideComp;;
+let rec chercher_comp (a: abr_comp) (e: int) : bool = match a with
+  | VideComp -> false
+  | NoeudComp(n) -> 
+    if (e < n.etq)
+    then (chercher_comp n.fg e)
+    else if (e > n.etq) 
+    then (chercher_comp n.fd e)
+    else true
+  | Pointeur(n) -> 
+    let i = (ref 0) and a = (ref n.point) and result = (ref false) in
+    begin
+      while !i < (Array.length n.etqs) && (!result = false) do
+        if (e < n.etqs.(!i)) then
+          begin
+            i := !i + 1; 
+            a := (filsGauche !a);
+          end
+        else if (e > n.etqs.(!i)) then
+          begin
+            i := !i + 1 + (taille_comp (filsGauche !a));
+            a := (filsDroit !a);
+          end
+        else result := true
+      done;
+      !result;
+    end;;    
 ```
 
- Pour manipuler le tableau d'étiquettes dans `Pointeur`(voir la question 2.10), nous avons une fonction `slice` (voir le fichier abr.ml) qui peut extraire une partie contenant les éléments entre i-ème et k-ème (i et k sont inclus) dans ce tableau. 
 
-Si on tombe dans la cherche d'un élément `e` dans un tableau d'étiquettes, sachant que le premier élément `x` présente la racine de l'ABR. En  comparant `e` et `x`, on peut savoir l'élément `e` est dans le fils droit ou gauche puis nous utilisons la fonction `slice` pour nous aider à sauter dans **la partie correspondante** puis le chercher récursivement.
-
-La partie correspondante dépend la position de l'élément x: 
-
-- Si dans le fils droit, cette partie sera de 2ème élément au `d`- ème élément (dont `d` est la taille de fils droit)
-- Si dans le fils gauche, cette partie sera de `d`+1 élément jusqu'à la fin du tableau.
 
 ### Question 2.13
 
- La complexité en moyenne de la recherche dans un ABR compressé dépend de la fonction `slice`. Elle utilise l'algorithme `take` et `drop` qui ont une complexité $O(n)$, donc la complexité de notre algorithme de la fonction *chercher* est en $O(n)$.
+ La complexité en moyenne de la recherche dans un ABR compressé dépend de la procédure de visiter le tableau d'étiquettes. La complexité de notre algorithme de la fonction *chercher* est en $O(n)$.
 
 # Expérimentations
 
@@ -267,29 +273,24 @@ let time f x: float =
   (Sys.time() -. t);;
 ```
 
-L'argument `f` est la fonction à tester alors l'argument `x` est l'argument de `f`. 
+L'argument `f` est la fonction à tester alors `x` est l'argument de `f`. 
 
-Pour calculer l’espace mémoire occupé par une structure, nous avons trouvé ces deux fonctions: 
+Pour calculer l’espace mémoire occupé par une structure, **nous utilisons la fonction `sizeof` proposée dans l'énoncé.** 
 
-```ocaml
-let size_abr (a: abr) : int = sizeof a;;
-
-let rec size_abr_comp (a: abr_comp) : int = match a with
-  | VideComp -> sizeof VideComp
-  | NoeudComp(n) -> 4 + (size_abr_comp n.fg) + (size_abr_comp n.fd)
-  | Pointeur(n) -> (sizeof n.etqs) + 1 ;;
-```
-
-En testant la fonction `size_abr`, on a eu le résultat qu'un ABR non compressé ayant seulement un nœud interne (racine) a la taille de 4 mots qui sont 
+On peur déduire qu'un ABR non compressé ayant seulement un nœud interne (racine) a la taille de **4 mots** qui sont 
 
 - 3 valeurs: étiquette, fils gauche, fils droit
 - son en-tête
 
-Donc dans la fonction `size_abr_comp`, on peut en déduire qu'un nœud dans un ABR compressé a aussi au moins une taille de 4 mots. Dans le record `Pointeur`, selon la description d'OCaml, un pointeur a la même taille qu'un entier qui est un mot en machine, donc on peut en déduire qu'un `Pointeur` a  la taille `(sizeof n.etqs) + 1` .
+Pour un ABR compressé, le record `Pointeur` qui sont composé par un tableau et un pointer vers un ABR non compressé. Soit le nombre d'étiquettes dans le tableau `x`, on peut déduire qu'un record `Pointer` peut avoir **`1 + x + 4 ` mots** qui sont
+
+- en-tête de tableau: 1 mot
+- `x` éléments: x mots
+- pointer vers un ABR non compressé: 4 mots
 
 ### Question 3.14
 
-![temps.png](https://i.loli.net/2020/12/01/jQ7yLhYTMtZciRs.png)
+![temps.png](https://i.loli.net/2020/12/13/9xmP1ZBNiy6tbQH.png)
 
 L'axe des ordonnées est la somme de temps pour chercher tous les nœuds dans un ABR. S'il y a `n` entiers dans un ABR `a`, alors la valeur est `(time_chercher chercher a 1) +(time_chercher chercher a 2) + ... + (time_chercher chercher a n)`.
 
@@ -297,6 +298,12 @@ La fonction *chercher*  dans un *ABR compressé* doit manipuler le tableau donc 
 
 ### Question 3.15
 
-![espace.png](https://i.loli.net/2020/12/01/f7BDLgKvZGUpR5S.png)
+Pour comparer la comparaison d'ABR de différentes tailles, nous introduisons 2 cas: ABR de 50 - 500 nœuds et ABR de 500 - 5000 nœuds.
 
-D'après le graphe, nous pouvons remarquer que l'ABR compressé est plus optimisé en terme d'espace mémoire. Cette optimisation est plus évidente si le nombre de nœuds `n` est assez grand. 
+![espace_petit.png](https://i.loli.net/2020/12/13/BVIlk3ezZHqNGE7.png)
+
+D'après le graphe, nous pouvons remarquer que l'ABR compressé prends plus d'espace de mémoire que l'ABR non compressé sur une petite taille. Mais au fur à l'augmentation de taille, l'ABR compressé a une bonne optimisation.
+
+![espace.png](https://i.loli.net/2020/12/13/mascnk2TG1NU8zg.png)
+
+Dans le cas où la taille d'ABR est assez grand, l'ABR compressé peut contenir plus de `Pointeur` qui peuvent épargner l'espace de mémoire. On peut conclure que notre algorithme a une meilleur performance pour compresser un ABR de grande taille.
