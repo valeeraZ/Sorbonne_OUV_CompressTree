@@ -147,8 +147,6 @@ let rec construction_comp (a: abr) : abr_comp = match a with
     let l = (arbres ab) in
     let rec replace (a: abr_comp) = 
     let e = (find a l) in 
-      let e = (find a l) in 
-    let e = (find a l) in 
       if (identique a e) = true
       then match a with
         | VideComp -> VideComp
